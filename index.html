@@ -1,1301 +1,558 @@
 <!DOCTYPE html>
 <html lang="ja">
-
 <head>
-    <meta charset="UTF-8">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>佐渡すごろく</title>
 
-    <title>佐渡すごろく</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
-    <!-- Leaflet -->
-    <link
-        rel="stylesheet"
-        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    >
+<style>
+    * { box-sizing: border-box; }
 
-    <style>
+    body {
+        margin: 0;
+        font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+        background: #eef8ff;
+    }
 
-        /* =========================================
-           全体
-        ========================================= */
+    #map {
+        height: 100vh;
+        width: 100%;
+    }
 
-        body {
-            margin: 0;
-            font-family: sans-serif;
-            background: #f5f5f5;
+    #gamePanel {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        z-index: 1000;
+        width: 280px;
+        padding: 16px;
+        background: rgba(255,255,255,0.96);
+        border-radius: 18px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.22);
+    }
+
+    #title {
+        font-size: 25px;
+        font-weight: 900;
+        color: #124d82;
+        text-align: center;
+        margin-bottom: 10px;
+    }
+
+    #turnDisplay {
+        padding: 10px;
+        text-align: center;
+        font-size: 20px;
+        font-weight: 900;
+        background: #fff0b8;
+        border-radius: 12px;
+        margin-bottom: 10px;
+    }
+
+    /* サイコロ表示エリア */
+    #diceArea {
+        height: 155px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        border-radius: 14px;
+        background: linear-gradient(180deg, #edf9ff, #ffffff);
+        margin-bottom: 10px;
+    }
+
+    #diceImage {
+        width: 145px;
+        height: 145px;
+        object-fit: cover;
+        border-radius: 22px;
+        user-select: none;
+        pointer-events: none;
+        filter: drop-shadow(0 7px 6px rgba(0,0,0,0.18));
+    }
+
+    /* 振っている間の動き */
+    .diceRolling {
+        animation: diceRolling 0.18s infinite;
+    }
+
+    @keyframes diceRolling {
+        0% {
+            transform: rotate(-12deg) scale(0.94);
         }
-
-
-        /* =========================================
-           地図
-        ========================================= */
-
-        #map {
-            height: 90vh;
-            width: 100%;
+        25% {
+            transform: rotate(12deg) scale(1.05);
         }
+        50% {
+            transform: rotate(-8deg) scale(1.10);
+        }
+        75% {
+            transform: rotate(10deg) scale(1.02);
+        }
+        100% {
+            transform: rotate(-12deg) scale(0.94);
+        }
+    }
 
+    /* 出目が決まった瞬間 */
+    .diceResult {
+        animation: diceResult 0.45s ease-out;
+    }
 
-        /* =========================================
-           ゲームパネル
-        ========================================= */
+    @keyframes diceResult {
+        0% { transform: scale(0.85) rotate(-8deg); }
+        60% { transform: scale(1.12) rotate(4deg); }
+        100% { transform: scale(1) rotate(0deg); }
+    }
 
+    #diceButton {
+        width: 100%;
+        padding: 13px;
+        border: none;
+        border-radius: 12px;
+        background: #ffc83d;
+        color: #222;
+        font-size: 19px;
+        font-weight: 900;
+        cursor: pointer;
+        box-shadow: 0 3px 0 #d79d00;
+        transition: 0.15s;
+    }
+
+    #diceButton:hover {
+        transform: translateY(-2px);
+        background: #ffd45d;
+    }
+
+    #diceButton:active {
+        transform: translateY(2px);
+        box-shadow: none;
+    }
+
+    #diceButton:disabled {
+        background: #ccc;
+        box-shadow: none;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .playerRow {
+        margin-top: 10px;
+        padding: 9px 12px;
+        border-radius: 11px;
+        font-weight: bold;
+    }
+
+    .player1 { background: #ffe1e1; }
+    .player2 { background: #e1eaff; }
+
+    .space-number {
+        background: white;
+        border: 2px solid #333;
+        border-radius: 50%;
+        width: 25px;
+        height: 25px;
+        text-align: center;
+        line-height: 21px;
+        font-size: 11px;
+        font-weight: bold;
+    }
+
+    .landmark {
+        background: #ffd34e;
+        border: 3px solid #e59b00;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        text-align: center;
+        line-height: 30px;
+        font-size: 12px;
+        font-weight: bold;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+    }
+
+    .player-token {
+        border-radius: 50%;
+        width: 29px;
+        height: 29px;
+        border: 3px solid white;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.45);
+    }
+
+    .player1-token { background: #ef3340; }
+    .player2-token { background: #1769d1; }
+
+    @media (max-width: 700px) {
         #gamePanel {
-
-            position: absolute;
-
-            top: 10px;
-            left: 10px;
-
-            z-index: 1000;
-
-            background: rgba(255,255,255,0.95);
-
-            padding: 15px;
-
-            border-radius: 12px;
-
-            box-shadow:
-                0 3px 10px rgba(0,0,0,0.25);
-
-            min-width: 250px;
+            width: 235px;
+            padding: 11px;
         }
-
-
-        /* 現在のターン */
-
-        #turnDisplay {
-
-            font-size: 20px;
-
-            font-weight: bold;
-
-            margin-bottom: 10px;
-        }
-
-
-        /* =========================================
-           3Dサイコロ
-        ========================================= */
-
-        #diceArea {
-
-            width: 120px;
-            height: 120px;
-
-            margin: 15px auto;
-
-            perspective: 500px;
-        }
-
-
-        /* サイコロを回転させる箱 */
-
-        #dice {
-
-            width: 80px;
-            height: 80px;
-
-            position: relative;
-
-            margin: 20px auto;
-
-            transform-style: preserve-3d;
-
-            /*
-              普段の角度
-            */
-
-            transform:
-                rotateX(-20deg)
-                rotateY(25deg);
-
-            transition:
-                transform 0.8s
-                cubic-bezier(.17,.67,.32,1.3);
-        }
-
-
-        /* =========================================
-           サイコロの6面
-        ========================================= */
-
-        .face {
-
-            position: absolute;
-
-            width: 80px;
-            height: 80px;
-
-            background: white;
-
-            border: 2px solid #333;
-
-            border-radius: 12px;
-
-            box-sizing: border-box;
-
-            display: flex;
-
-            justify-content: center;
-
-            align-items: center;
-
-            font-size: 48px;
-
-            font-weight: bold;
-
-            color: #222;
-
-            box-shadow:
-                inset 0 0 10px rgba(0,0,0,0.15);
-        }
-
-
-        /* 前 */
-
-        .front {
-
-            transform:
-                translateZ(40px);
-        }
-
-
-        /* 後ろ */
-
-        .back {
-
-            transform:
-                rotateY(180deg)
-                translateZ(40px);
-        }
-
-
-        /* 右 */
-
-        .right {
-
-            transform:
-                rotateY(90deg)
-                translateZ(40px);
-        }
-
-
-        /* 左 */
-
-        .left {
-
-            transform:
-                rotateY(-90deg)
-                translateZ(40px);
-        }
-
-
-        /* 上 */
-
-        .top {
-
-            transform:
-                rotateX(90deg)
-                translateZ(40px);
-        }
-
-
-        /* 下 */
-
-        .bottom {
-
-            transform:
-                rotateX(-90deg)
-                translateZ(40px);
-        }
-
-
-        /* =========================================
-           サイコロを転がしているとき
-        ========================================= */
-
-        .rolling {
-
-            animation:
-                diceRolling 0.35s infinite linear;
-        }
-
-
-        @keyframes diceRolling {
-
-            0% {
-
-                transform:
-                    rotateX(0deg)
-                    rotateY(0deg)
-                    rotateZ(0deg)
-                    scale(1);
-
-            }
-
-            25% {
-
-                transform:
-                    rotateX(90deg)
-                    rotateY(120deg)
-                    rotateZ(30deg)
-                    scale(1.1);
-
-            }
-
-            50% {
-
-                transform:
-                    rotateX(200deg)
-                    rotateY(220deg)
-                    rotateZ(90deg)
-                    scale(0.9);
-
-            }
-
-            75% {
-
-                transform:
-                    rotateX(300deg)
-                    rotateY(320deg)
-                    rotateZ(150deg)
-                    scale(1.1);
-
-            }
-
-            100% {
-
-                transform:
-                    rotateX(360deg)
-                    rotateY(360deg)
-                    rotateZ(360deg)
-                    scale(1);
-
-            }
-
-        }
-
-
-        /* =========================================
-           サイコロボタン
-        ========================================= */
-
-        #diceButton {
-
-            width: 100%;
-
-            padding: 12px;
-
-            font-size: 20px;
-
-            font-weight: bold;
-
-            border: none;
-
-            border-radius: 10px;
-
-            background: #ffcc33;
-
-            cursor: pointer;
-
-            transition: 0.2s;
-        }
-
-
-        #diceButton:hover {
-
-            background: #ffb700;
-
-            transform: scale(1.03);
-        }
-
-
-        #diceButton:active {
-
-            transform: scale(0.95);
-        }
-
-
-        #diceButton:disabled {
-
-            background: #cccccc;
-
-            cursor: not-allowed;
-
-            transform: none;
-        }
-
-
-        /* =========================================
-           プレイヤー情報
-        ========================================= */
-
-        .playerRow {
-
-            margin-top: 8px;
-
-            padding: 8px;
-
-            border-radius: 8px;
-
-            font-size: 16px;
-
-            font-weight: bold;
-        }
-
-
-        .player1 {
-
-            background: #ffdddd;
-        }
-
-
-        .player2 {
-
-            background: #ddddff;
-        }
-
-
-        /* =========================================
-           普通のマス
-        ========================================= */
-
-        .space-number {
-
-            background: white;
-
-            border: 2px solid #333;
-
-            border-radius: 50%;
-
-            width: 24px;
-
-            height: 24px;
-
-            text-align: center;
-
-            line-height: 24px;
-
-            font-size: 12px;
-
-            font-weight: bold;
-        }
-
-
-        /* =========================================
-           ランドマーク
-        ========================================= */
-
-        .landmark {
-
-            background: #ffd700;
-
-            border: 3px solid #ff9900;
-
-            border-radius: 50%;
-
-            width: 34px;
-
-            height: 34px;
-
-            text-align: center;
-
-            line-height: 34px;
-
-            font-size: 13px;
-
-            font-weight: bold;
-        }
-
-
-        /* =========================================
-           プレイヤーのコマ
-        ========================================= */
-
-        .player-token {
-
-            border-radius: 50%;
-
-            width: 28px;
-
-            height: 28px;
-
-            border: 3px solid white;
-
-            box-shadow:
-                0 2px 6px rgba(0,0,0,0.4);
-        }
-
-
-        .player1-token {
-
-            background: red;
-        }
-
-
-        .player2-token {
-
-            background: blue;
-        }
-
-
-    </style>
-
+        #title { font-size: 21px; }
+        #turnDisplay { font-size: 17px; }
+        #diceArea { height: 125px; }
+        #diceImage { width: 115px; height: 115px; }
+        #diceButton { font-size: 17px; }
+    }
+</style>
 </head>
-
 
 <body>
 
+<div id="gamePanel">
+    <div id="title">🏝️ 佐渡すごろく</div>
 
-    <!-- =========================================
-         ゲーム画面
-    ========================================= -->
+    <div id="turnDisplay">プレイヤー1のターン</div>
 
-    <div id="gamePanel">
-
-
-        <!-- 現在のプレイヤー -->
-
-        <div id="turnDisplay">
-
-            プレイヤー1のターン
-
-        </div>
-
-
-
-        <!-- =====================================
-             3Dサイコロ
-        ====================================== -->
-
-        <div id="diceArea">
-
-            <div id="dice">
-
-
-                <!-- 1 -->
-
-                <div class="face front">
-
-                    ⚫
-
-                </div>
-
-
-                <!-- 6 -->
-
-                <div class="face back">
-
-                    ⚫⚫⚫
-                    <br>
-                    ⚫⚫⚫
-
-                </div>
-
-
-                <!-- 3 -->
-
-                <div class="face right">
-
-                    ⚫⚫⚫
-
-                </div>
-
-
-                <!-- 4 -->
-
-                <div class="face left">
-
-                    ⚫⚫
-                    <br>
-                    ⚫⚫
-
-                </div>
-
-
-                <!-- 2 -->
-
-                <div class="face top">
-
-                    ⚫⚫
-
-                </div>
-
-
-                <!-- 5 -->
-
-                <div class="face bottom">
-
-                    ⚫⚫
-                    <br>
-                    ⚫⚫
-                    <br>
-                    ⚫
-
-                </div>
-
-
-            </div>
-
-        </div>
-
-
-
-        <!-- サイコロボタン -->
-
-        <button id="diceButton">
-
-            🎲 サイコロを振る
-
-        </button>
-
-
-
-        <!-- プレイヤー -->
-
-        <div class="playerRow player1">
-
-            🔴 プレイヤー1
-
-        </div>
-
-
-        <div class="playerRow player2">
-
-            🔵 プレイヤー2
-
-        </div>
-
-
+    <div id="diceArea">
+        <img id="diceImage" src="images/dice1.png" alt="サイコロ">
     </div>
 
+    <button id="diceButton">🎲 サイコロを振る</button>
+
+    <div class="playerRow player1">🔴 プレイヤー1</div>
+    <div class="playerRow player2">🔵 プレイヤー2</div>
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+
+/* =========================================
+   ① 地図
+========================================= */
+
+const map = L.map("map").setView([38.05, 138.38], 10);
+
+L.tileLayer(
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    {
+        attribution: '&copy; OpenStreetMap contributors'
+    }
+).addTo(map);
+
+
+/* =========================================
+   ② 40マス
+========================================= */
+
+const spaces = [
+    {name:"両津港", lat:38.0776, lng:138.4396},
+    {lat:38.0670, lng:138.4350},
+    {lat:38.0570, lng:138.4300},
+    {lat:38.0480, lng:138.4260},
+    {name:"トキの森公園", lat:38.0405, lng:138.4230},
+    {lat:38.0950, lng:138.4300},
+    {lat:38.1400, lng:138.4350},
+    {lat:38.1900, lng:138.4450},
+    {lat:38.2500, lng:138.4600},
+    {name:"大野亀", lat:38.3260, lng:138.4730},
+    {lat:38.2800, lng:138.4300},
+    {lat:38.2200, lng:138.3900},
+    {lat:38.1600, lng:138.3400},
+    {lat:38.1000, lng:138.2900},
+    {name:"佐渡金山", lat:38.0398, lng:138.2508},
+    {lat:38.0300, lng:138.2650},
+    {lat:38.0200, lng:138.2800},
+    {lat:38.0100, lng:138.2950},
+    {lat:38.0020, lng:138.3100},
+    {name:"大膳神社", lat:37.9950, lng:138.3250},
+    {lat:37.9920, lng:138.3370},
+    {lat:37.9890, lng:138.3500},
+    {lat:37.9870, lng:138.3620},
+    {lat:37.9850, lng:138.3730},
+    {name:"妙宣寺", lat:37.9828, lng:138.3840},
+    {lat:37.9500, lng:138.3700},
+    {lat:37.9100, lng:138.3500},
+    {lat:37.8700, lng:138.3300},
+    {lat:37.8350, lng:138.3050},
+    {name:"小木港", lat:37.8068, lng:138.2815},
+    {lat:37.8350, lng:138.3300},
+    {lat:37.8700, lng:138.3700},
+    {lat:37.9000, lng:138.4100},
+    {lat:37.9350, lng:138.4600},
+    {name:"岩首昇竜棚田", lat:37.9620, lng:138.5040},
+    {lat:37.9850, lng:138.5200},
+    {lat:38.0200, lng:138.5100},
+    {lat:38.0500, lng:138.4900},
+    {lat:38.0700, lng:138.4650},
+    {name:"両津港（ゴール）", lat:38.0776, lng:138.4396}
+];
+
+
+/* =========================================
+   ③ ルート
+========================================= */
+
+const route = spaces.map(space => [space.lat, space.lng]);
+
+L.polyline(route, {
+    color: "red",
+    weight: 5,
+    opacity: 0.75
+}).addTo(map);
+
+
+/* =========================================
+   ④ マス表示
+========================================= */
+
+spaces.forEach((space, index) => {
+
+    let icon;
+
+    if (space.name) {
+        icon = L.divIcon({
+            className: "",
+            html: `<div class="landmark">${index + 1}</div>`,
+            iconSize: [36, 36],
+            iconAnchor: [18, 18]
+        });
+    } else {
+        icon = L.divIcon({
+            className: "",
+            html: `<div class="space-number">${index + 1}</div>`,
+            iconSize: [25, 25],
+            iconAnchor: [12, 12]
+        });
+    }
+
+    const marker = L.marker(
+        [space.lat, space.lng],
+        {icon: icon}
+    ).addTo(map);
+
+    if (space.name) {
+        marker.bindTooltip(space.name, {
+            permanent: true,
+            direction: "top",
+            offset: [0, -16]
+        });
+    }
+});
+
+
+/* =========================================
+   ⑤ プレイヤー
+========================================= */
+
+const players = [
+    {
+        name: "プレイヤー1",
+        position: 0,
+        marker: null
+    },
+    {
+        name: "プレイヤー2",
+        position: 0,
+        marker: null
+    }
+];
 
+players.forEach((player, index) => {
 
-    <!-- =========================================
-         地図
-    ========================================= -->
+    const icon = L.divIcon({
+        className: "",
+        html: `<div class="player-token player${index + 1}-token"></div>`,
+        iconSize: [35, 35],
+        iconAnchor: [17, 17]
+    });
 
-    <div id="map"></div>
+    player.marker = L.marker(
+        [spaces[0].lat, spaces[0].lng],
+        {
+            icon: icon,
+            zIndexOffset: 1000 + index
+        }
+    ).addTo(map);
+});
 
 
+/* =========================================
+   ⑥ ゲーム状態
+========================================= */
 
-    <!-- Leaflet -->
+let currentPlayer = 0;
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+const diceImage = document.getElementById("diceImage");
+const diceButton = document.getElementById("diceButton");
+const turnDisplay = document.getElementById("turnDisplay");
 
 
+/* =========================================
+   ⑦ サイコロ画像を先読み
+   最初の一回だけ読み込みが遅くなるのを防ぐ
+========================================= */
 
-    <script>
+const diceImages = [];
 
+for (let i = 1; i <= 6; i++) {
+    const image = new Image();
+    image.src = `images/dice${i}.png`;
+    diceImages.push(image);
+}
 
-        /* =========================================
-           ① 地図
-        ========================================= */
 
-        const map =
-            L.map("map")
-            .setView(
-                [38.05,138.38],
-                10
-            );
+/* =========================================
+   ⑧ 待つ関数
+========================================= */
 
+function wait(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
-        /* OpenStreetMap */
 
-        L.tileLayer(
+/* =========================================
+   ⑨ ターン表示
+========================================= */
 
-            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+function updateScreen() {
+    turnDisplay.textContent =
+        players[currentPlayer].name + "のターン";
+}
 
-            {
 
-                attribution:
-                    '&copy; OpenStreetMap contributors'
+/* =========================================
+   ⑩ サイコロを振る
+========================================= */
 
-            }
+async function rollDice() {
 
-        ).addTo(map);
+    diceButton.disabled = true;
 
+    diceImage.classList.remove("diceResult");
+    diceImage.classList.add("diceRolling");
 
+    /*
+       6種類の画像を高速で切り替える
+    */
 
-        /* =========================================
-           ② 40マス
-        ========================================= */
+    let imageNumber = 1;
+    const startTime = Date.now();
 
-        const spaces = [
+    while (Date.now() - startTime < 1100) {
 
-            {name:"両津港", lat:38.0776, lng:138.4396},
+        diceImage.src = `images/dice${imageNumber}.png`;
 
-            {lat:38.0670, lng:138.4350},
+        imageNumber++;
 
-            {lat:38.0570, lng:138.4300},
+        if (imageNumber > 6) {
+            imageNumber = 1;
+        }
 
-            {lat:38.0480, lng:138.4260},
+        await wait(90);
+    }
 
-            {name:"トキの森公園", lat:38.0405, lng:138.4230},
+    /* 本当の出目を決定 */
 
-            {lat:38.0950, lng:138.4300},
+    const result = Math.floor(Math.random() * 6) + 1;
 
-            {lat:38.1400, lng:138.4350},
+    /* 最終結果を表示 */
 
-            {lat:38.1900, lng:138.4450},
+    diceImage.src = `images/dice${result}.png`;
 
-            {lat:38.2500, lng:138.4600},
+    diceImage.classList.remove("diceRolling");
 
-            {name:"大野亀", lat:38.3260, lng:138.4730},
+    /* 「ドン！」と止まる */
 
-            {lat:38.2800, lng:138.4300},
+    void diceImage.offsetWidth;
+    diceImage.classList.add("diceResult");
 
-            {lat:38.2200, lng:138.3900},
+    await wait(600);
 
-            {lat:38.1600, lng:138.3400},
+    return result;
+}
 
-            {lat:38.1000, lng:138.2900},
 
-            {name:"佐渡金山", lat:38.0398, lng:138.2508},
+/* =========================================
+   ⑪ コマを1マスずつ移動
+========================================= */
 
-            {lat:38.0300, lng:138.2650},
+async function movePlayer(player, steps) {
 
-            {lat:38.0200, lng:138.2800},
+    for (let i = 0; i < steps; i++) {
 
-            {lat:38.0100, lng:138.2950},
+        if (player.position < spaces.length - 1) {
+            player.position++;
+        }
 
-            {lat:38.0020, lng:138.3100},
+        const target = spaces[player.position];
 
-            {name:"大膳神社", lat:37.9950, lng:138.3250},
+        player.marker.setLatLng([
+            target.lat,
+            target.lng
+        ]);
 
-            {lat:37.9920, lng:138.3370},
+        await wait(300);
+    }
+}
 
-            {lat:37.9890, lng:138.3500},
 
-            {lat:37.9870, lng:138.3620},
+/* =========================================
+   ⑫ ランドマーク到着
+========================================= */
 
-            {lat:37.9850, lng:138.3730},
+function landmarkEffect(position) {
 
-            {name:"妙宣寺", lat:37.9828, lng:138.3840},
+    const space = spaces[position];
 
-            {lat:37.9500, lng:138.3700},
+    if (!space.name) return;
 
-            {lat:37.9100, lng:138.3500},
+    alert("📍 " + space.name + " に到着！");
+}
 
-            {lat:37.8700, lng:138.3300},
 
-            {lat:37.8350, lng:138.3050},
+/* =========================================
+   ⑬ サイコロボタン
+========================================= */
 
-            {name:"小木港", lat:37.8068, lng:138.2815},
+diceButton.addEventListener("click", async () => {
 
-            {lat:37.8350, lng:138.3300},
+    const player = players[currentPlayer];
 
-            {lat:37.8700, lng:138.3700},
+    const result = await rollDice();
 
-            {lat:37.9000, lng:138.4100},
+    console.log(player.name + "の出目：" + result);
 
-            {lat:37.9350, lng:138.4600},
+    await movePlayer(player, result);
 
-            {name:"岩首昇竜棚田", lat:37.9620, lng:138.5040},
+    landmarkEffect(player.position);
 
-            {lat:37.9850, lng:138.5200},
+    /* ゴール */
 
-            {lat:38.0200, lng:138.5100},
+    if (player.position === spaces.length - 1) {
 
-            {lat:38.0500, lng:138.4900},
-
-            {lat:38.0700, lng:138.4650},
-
-            {name:"両津港（ゴール）", lat:38.0776, lng:138.4396}
-
-        ];
-
-
-
-        /* =========================================
-           ③ ルート
-        ========================================= */
-
-        const route =
-            spaces.map(
-                space =>
-                    [space.lat,space.lng]
-            );
-
-
-        L.polyline(
-
-            route,
-
-            {
-
-                color:"red",
-
-                weight:5,
-
-                opacity:0.7
-
-            }
-
-        ).addTo(map);
-
-
-
-        /* =========================================
-           ④ マスを表示
-        ========================================= */
-
-        spaces.forEach(
-
-            (space,index) => {
-
-
-                let icon;
-
-
-                /* ランドマーク */
-
-                if(space.name){
-
-                    icon =
-                        L.divIcon({
-
-                            className:"",
-
-                            html:
-                                `<div class="landmark">
-                                    ${index + 1}
-                                </div>`,
-
-                            iconSize:
-                                [34,34],
-
-                            iconAnchor:
-                                [17,17]
-
-                        });
-
-                }
-
-
-                /* 普通のマス */
-
-                else{
-
-                    icon =
-                        L.divIcon({
-
-                            className:"",
-
-                            html:
-                                `<div class="space-number">
-                                    ${index + 1}
-                                </div>`,
-
-                            iconSize:
-                                [24,24],
-
-                            iconAnchor:
-                                [12,12]
-
-                        });
-
-                }
-
-
-                const marker =
-                    L.marker(
-
-                        [
-                            space.lat,
-                            space.lng
-                        ],
-
-                        {
-                            icon:icon
-                        }
-
-                    ).addTo(map);
-
-
-
-                /* ランドマーク名 */
-
-                if(space.name){
-
-                    marker.bindTooltip(
-
-                        space.name,
-
-                        {
-
-                            permanent:true,
-
-                            direction:"top",
-
-                            offset:
-                                [0,-15]
-
-                        }
-
-                    );
-
-                }
-
-            }
-
+        alert(
+            "🎉 " +
+            player.name +
+            " が佐渡を1周しました！"
         );
 
+        diceButton.disabled = true;
+        return;
+    }
 
+    /* 次のプレイヤー */
 
-        /* =========================================
-           ⑤ プレイヤー
-        ========================================= */
+    currentPlayer =
+        (currentPlayer + 1) % players.length;
 
-        const players = [
+    updateScreen();
 
-            {
+    diceButton.disabled = false;
+});
 
-                name:"プレイヤー1",
 
-                position:0,
+/* =========================================
+   ⑭ 初期表示
+========================================= */
 
-                color:"red",
+updateScreen();
 
-                marker:null
-
-            },
-
-            {
-
-                name:"プレイヤー2",
-
-                position:0,
-
-                color:"blue",
-
-                marker:null
-
-            }
-
-        ];
-
-
-
-        /* =========================================
-           ⑥ プレイヤーのコマ
-        ========================================= */
-
-        players.forEach(
-
-            (player,index) => {
-
-
-                const icon =
-                    L.divIcon({
-
-                        className:"",
-
-                        html:
-
-                            `<div class="player-token player${index+1}-token">
-                            </div>`,
-
-                        iconSize:
-                            [34,34],
-
-                        iconAnchor:
-                            [17,17]
-
-                    });
-
-
-
-                player.marker =
-                    L.marker(
-
-                        [
-                            spaces[0].lat,
-                            spaces[0].lng
-                        ],
-
-                        {
-
-                            icon:icon,
-
-                            zIndexOffset:
-                                1000 + index
-
-                        }
-
-                    ).addTo(map);
-
-            }
-
-        );
-
-
-
-        /* =========================================
-           ⑦ ターン
-        ========================================= */
-
-        let currentPlayer = 0;
-
-
-
-        /* =========================================
-           ⑧ HTML取得
-        ========================================= */
-
-        const dice =
-            document.getElementById("dice");
-
-        const diceButton =
-            document.getElementById("diceButton");
-
-        const turnDisplay =
-            document.getElementById("turnDisplay");
-
-
-
-        /* =========================================
-           ⑨ 待つ
-        ========================================= */
-
-        function wait(ms){
-
-            return new Promise(
-
-                resolve =>
-                    setTimeout(resolve,ms)
-
-            );
-
-        }
-
-
-
-        /* =========================================
-           ⑩ ターン表示
-        ========================================= */
-
-        function updateScreen(){
-
-            turnDisplay.textContent =
-                players[currentPlayer].name
-                +
-                "のターン";
-
-        }
-
-
-
-        /* =========================================
-           ⑪ 3Dサイコロを振る
-        ========================================= */
-
-        async function rollDice(){
-
-
-            /* ボタンを無効化 */
-
-            diceButton.disabled = true;
-
-
-            /* 転がるアニメーション */
-
-            dice.classList.add("rolling");
-
-
-            /*
-               1秒間転がす
-            */
-
-            await wait(1000);
-
-
-            /* アニメーション停止 */
-
-            dice.classList.remove("rolling");
-
-
-            /*
-               1〜6の数字を決定
-            */
-
-            const result =
-                Math.floor(
-                    Math.random() * 6
-                ) + 1;
-
-
-
-            /* =====================================
-               出目に合わせてサイコロを回転
-            ===================================== */
-
-            if(result === 1){
-
-                dice.style.transform =
-                    "rotateX(0deg) rotateY(0deg)";
-
-            }
-
-
-            else if(result === 2){
-
-                dice.style.transform =
-                    "rotateX(-90deg) rotateY(0deg)";
-
-            }
-
-
-            else if(result === 3){
-
-                dice.style.transform =
-                    "rotateY(-90deg)";
-
-            }
-
-
-            else if(result === 4){
-
-                dice.style.transform =
-                    "rotateY(90deg)";
-
-            }
-
-
-            else if(result === 5){
-
-                dice.style.transform =
-                    "rotateX(90deg)";
-
-            }
-
-
-            else if(result === 6){
-
-                dice.style.transform =
-                    "rotateY(180deg)";
-
-            }
-
-
-            /* 少し止める */
-
-            await wait(700);
-
-
-            return result;
-
-        }
-
-
-
-        /* =========================================
-           ⑫ プレイヤーを移動
-        ========================================= */
-
-        async function movePlayer(
-
-            player,
-            steps
-
-        ){
-
-            for(
-
-                let i=0;
-
-                i<steps;
-
-                i++
-
-            ){
-
-                /* 次のマス */
-
-                if(
-
-                    player.position
-                    <
-                    spaces.length - 1
-
-                ){
-
-                    player.position++;
-
-                }
-
-
-                /* コマを移動 */
-
-                player.marker.setLatLng(
-
-                    [
-
-                        spaces[
-                            player.position
-                        ].lat,
-
-                        spaces[
-                            player.position
-                        ].lng
-
-                    ]
-
-                );
-
-
-                /* 1マスごとに待つ */
-
-                await wait(300);
-
-            }
-
-        }
-
-
-
-        /* =========================================
-           ⑬ ランドマーク到着
-        ========================================= */
-
-        function landmarkEffect(position){
-
-            const space =
-                spaces[position];
-
-
-            if(!space.name){
-
-                return;
-
-            }
-
-
-            alert(
-
-                "📍 "
-                +
-                space.name
-                +
-                " に到着！"
-
-            );
-
-        }
-
-
-
-        /* =========================================
-           ⑭ サイコロボタン
-        ========================================= */
-
-        diceButton.addEventListener(
-
-            "click",
-
-            async function(){
-
-
-                const player =
-                    players[currentPlayer];
-
-
-                /* サイコロ */
-
-                const result =
-                    await rollDice();
-
-
-                console.log(
-
-                    player.name
-                    +
-                    "の出目："
-                    +
-                    result
-
-                );
-
-
-                /* コマを移動 */
-
-                await movePlayer(
-
-                    player,
-                    result
-
-                );
-
-
-                /* ランドマーク */
-
-                landmarkEffect(
-
-                    player.position
-
-                );
-
-
-                /* ゴール */
-
-                if(
-
-                    player.position
-                    ===
-                    spaces.length - 1
-
-                ){
-
-                    alert(
-
-                        "🎉 "
-                        +
-                        player.name
-                        +
-                        " が佐渡を1周しました！"
-
-                    );
-
-
-                    diceButton.disabled =
-                        true;
-
-                    return;
-
-                }
-
-
-                /* 次のプレイヤー */
-
-                currentPlayer =
-                    (currentPlayer + 1)
-                    %
-                    players.length;
-
-
-                updateScreen();
-
-
-                /* ボタン復活 */
-
-                diceButton.disabled =
-                    false;
-
-            }
-
-        );
-
-
-
-        /* =========================================
-           ⑮ 初期画面
-        ========================================= */
-
-        updateScreen();
-
-
-    </script>
+</script>
 
 </body>
-
 </html>
