@@ -1,284 +1,358 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>佐渡すごろく</title>
 
-    <!-- Leafletの地図を使うためのCSS -->
+    <!-- Leaflet -->
     <link
         rel="stylesheet"
         href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    >
+    />
 
     <style>
-        /* ページ全体 */
+
+        /* =========================
+           全体
+        ========================= */
+
         body {
             margin: 0;
             font-family: sans-serif;
             background: #f5f5f5;
         }
 
-        /* タイトル */
-        h1 {
-            margin: 0;
-            padding: 12px;
-            text-align: center;
-            background: white;
-        }
-
         /* 地図 */
         #map {
-            width: 100%;
             height: 90vh;
+            width: 100%;
         }
 
-        /* サイコロ画面 */
+
+        /* =========================
+           ゲーム画面
+        ========================= */
+
         #gamePanel {
             position: absolute;
-            z-index: 1000;
-            top: 70px;
-            left: 20px;
+            top: 10px;
+            left: 10px;
 
-            width: 220px;
+            z-index: 1000;
+
+            background: rgba(255,255,255,0.95);
+
             padding: 15px;
 
-            background: white;
             border-radius: 12px;
 
-            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+
+            min-width: 230px;
         }
 
-        /* サイコロ */
+
+        /* 現在のプレイヤー */
+        #turnDisplay {
+            font-size: 20px;
+            font-weight: bold;
+
+            margin-bottom: 10px;
+        }
+
+
+        /* =========================
+           サイコロ
+        ========================= */
+
         #dice {
-            font-size: 50px;
+            font-size: 70px;
+
             text-align: center;
-            margin: 10px;
+
+            margin: 10px 0;
+
+            /* アニメーション */
+            transition: transform 0.1s;
         }
 
-        /* ボタン */
+
+        /* サイコロを振っているとき */
+        .rolling {
+            animation: diceRoll 0.12s infinite;
+        }
+
+
+        /* サイコロの動き */
+        @keyframes diceRoll {
+
+            0% {
+                transform: rotate(-15deg) scale(1);
+            }
+
+            25% {
+                transform: rotate(15deg) scale(1.15);
+            }
+
+            50% {
+                transform: rotate(-10deg) scale(0.9);
+            }
+
+            75% {
+                transform: rotate(10deg) scale(1.15);
+            }
+
+            100% {
+                transform: rotate(-15deg) scale(1);
+            }
+
+        }
+
+
+        /* サイコロボタン */
         #diceButton {
+
             width: 100%;
+
             padding: 12px;
 
-            border: none;
-            border-radius: 8px;
+            font-size: 20px;
 
-            background: #2e8b57;
-            color: white;
-
-            font-size: 18px;
             font-weight: bold;
+
+            border: none;
+
+            border-radius: 10px;
+
+            background: #ffcc33;
 
             cursor: pointer;
+
+            transition: 0.2s;
         }
+
 
         #diceButton:hover {
-            background: #246b45;
+            background: #ffb700;
+
+            transform: scale(1.03);
         }
 
+
+        #diceButton:active {
+            transform: scale(0.95);
+        }
+
+
+        /* サイコロを振っている間 */
         #diceButton:disabled {
-            background: gray;
+
+            background: #cccccc;
+
             cursor: not-allowed;
+
+            transform: none;
         }
 
-        /* プレイヤー情報 */
-        .player {
+
+        /* =========================
+           プレイヤー情報
+        ========================= */
+
+        .playerRow {
+
             margin-top: 8px;
+
             padding: 8px;
+
             border-radius: 8px;
-            background: #eeeeee;
+
+            font-size: 16px;
+
+            font-weight: bold;
         }
 
-        .active {
-            border: 3px solid #ffd700;
+
+        .player1 {
+            background: #ffdddd;
         }
 
-        /* メッセージ */
-        #message {
-            margin-top: 10px;
-            padding: 8px;
-            line-height: 1.5;
+
+        .player2 {
+            background: #ddddff;
         }
 
-        /* 通常のマス */
+
+        /* =========================
+           マス番号
+        ========================= */
+
         .space-number {
-            width: 28px;
-            height: 28px;
-
-            border-radius: 50%;
 
             background: white;
-            border: 2px solid black;
 
-            text-align: center;
-            line-height: 28px;
-
-            font-weight: bold;
-        }
-
-        /* 観光地のマス */
-        .landmark {
-            padding: 5px 8px;
-
-            background: #fff4a3;
-            border: 2px solid #d99b00;
-
-            border-radius: 8px;
-
-            font-weight: bold;
-            white-space: nowrap;
-        }
-
-        /* プレイヤーの駒 */
-        .player-token {
-            width: 30px;
-            height: 30px;
+            border: 2px solid #333;
 
             border-radius: 50%;
 
-            color: white;
+            width: 24px;
+
+            height: 24px;
+
             text-align: center;
-            line-height: 30px;
+
+            line-height: 24px;
+
+            font-size: 12px;
 
             font-weight: bold;
+        }
+
+
+        /* =========================
+           ランドマーク
+        ========================= */
+
+        .landmark {
+
+            background: #ffd700;
+
+            border: 3px solid #ff9900;
+
+            border-radius: 50%;
+
+            width: 34px;
+
+            height: 34px;
+
+            text-align: center;
+
+            line-height: 34px;
+
+            font-size: 13px;
+
+            font-weight: bold;
+
+        }
+
+
+        /* =========================
+           プレイヤーのコマ
+        ========================= */
+
+        .player-token {
+
+            border-radius: 50%;
+
+            width: 28px;
+
+            height: 28px;
 
             border: 3px solid white;
 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+
         }
 
-        .player1 {
+
+        .player1-token {
             background: red;
         }
 
-        .player2 {
+
+        .player2-token {
             background: blue;
         }
+
+
+        /* =========================
+           到着時の強調
+        ========================= */
+
+        .landmark-arrival {
+
+            animation: landmarkArrival 0.8s ease;
+
+        }
+
+
+        @keyframes landmarkArrival {
+
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.7);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+
+        }
+
     </style>
+
 </head>
+
 
 <body>
 
-    <h1>🗾 佐渡すごろく</h1>
 
-    <!-- ゲーム画面 -->
-    <div id="map"></div>
+    <!-- =========================
+         ゲーム情報
+         ========================= -->
 
-    <!-- ゲーム操作パネル -->
     <div id="gamePanel">
 
-        <div>
-            <strong>現在のターン</strong>
+        <div id="turnDisplay">
+            プレイヤー1のターン
         </div>
 
-        <div id="turn">
-            プレイヤー1
-        </div>
+
+        <!-- サイコロ -->
 
         <div id="dice">
             ⚀
         </div>
 
+
         <button id="diceButton">
             🎲 サイコロを振る
         </button>
 
-        <div class="player active" id="player1">
-            🔴 プレイヤー1<br>
-            現在：1番マス
+
+        <div class="playerRow player1">
+            🔴 プレイヤー1
         </div>
 
-        <div class="player" id="player2">
-            🔵 プレイヤー2<br>
-            現在：1番マス
-        </div>
 
-        <div id="message">
-            両津港からスタート！
+        <div class="playerRow player2">
+            🔵 プレイヤー2
         </div>
 
     </div>
 
 
-    <!-- Leaflet本体 -->
+    <!-- =========================
+         地図
+         ========================= -->
+
+    <div id="map"></div>
+
+
+    <!-- Leaflet -->
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 
     <script>
 
-        /*
-        ========================================
-        ① 40マスのデータ
-        ========================================
-        */
-
-        const spaces = [
-
-            // 1〜5
-            { id: 1,  lat: 38.0776, lng: 138.4396, name: "両津港" },
-            { id: 2,  lat: 38.0670, lng: 138.4350 },
-            { id: 3,  lat: 38.0570, lng: 138.4300 },
-            { id: 4,  lat: 38.0480, lng: 138.4260 },
-            { id: 5,  lat: 38.0405, lng: 138.4230, name: "トキの森公園" },
-
-            // 6〜10
-            { id: 6,  lat: 38.0950, lng: 138.4300 },
-            { id: 7,  lat: 38.1400, lng: 138.4350 },
-            { id: 8,  lat: 38.1900, lng: 138.4450 },
-            { id: 9,  lat: 38.2500, lng: 138.4600 },
-            { id: 10, lat: 38.3260, lng: 138.4730, name: "大野亀" },
-
-            // 11〜15
-            { id: 11, lat: 38.2800, lng: 138.4300 },
-            { id: 12, lat: 38.2200, lng: 138.3900 },
-            { id: 13, lat: 38.1600, lng: 138.3400 },
-            { id: 14, lat: 38.1000, lng: 138.2900 },
-            { id: 15, lat: 38.0398, lng: 138.2508, name: "佐渡金山" },
-
-            // 16〜20
-            { id: 16, lat: 38.0300, lng: 138.2650 },
-            { id: 17, lat: 38.0200, lng: 138.2800 },
-            { id: 18, lat: 38.0100, lng: 138.2950 },
-            { id: 19, lat: 38.0020, lng: 138.3100 },
-            { id: 20, lat: 37.9950, lng: 138.3250, name: "大膳神社" },
-
-            // 21〜25
-            { id: 21, lat: 37.9920, lng: 138.3370 },
-            { id: 22, lat: 37.9890, lng: 138.3500 },
-            { id: 23, lat: 37.9870, lng: 138.3620 },
-            { id: 24, lat: 37.9850, lng: 138.3730 },
-            { id: 25, lat: 37.9828, lng: 138.3840, name: "妙宣寺" },
-
-            // 26〜30
-            { id: 26, lat: 37.9500, lng: 138.3700 },
-            { id: 27, lat: 37.9100, lng: 138.3500 },
-            { id: 28, lat: 37.8700, lng: 138.3300 },
-            { id: 29, lat: 37.8350, lng: 138.3050 },
-            { id: 30, lat: 37.8068, lng: 138.2815, name: "小木港" },
-
-            // 31〜35
-            { id: 31, lat: 37.8350, lng: 138.3300 },
-            { id: 32, lat: 37.8700, lng: 138.3700 },
-            { id: 33, lat: 37.9000, lng: 138.4100 },
-            { id: 34, lat: 37.9350, lng: 138.4600 },
-            { id: 35, lat: 37.9620, lng: 138.5040, name: "岩首昇竜棚田" },
-
-            // 36〜40
-            { id: 36, lat: 37.9850, lng: 138.5200 },
-            { id: 37, lat: 38.0200, lng: 138.5100 },
-            { id: 38, lat: 38.0500, lng: 138.4900 },
-            { id: 39, lat: 38.0700, lng: 138.4650 },
-            { id: 40, lat: 38.0776, lng: 138.4396, name: "両津港（ゴール）" }
-
-        ];
-
-
-        /*
-        ========================================
-        ② 佐渡の地図を作る
-        ========================================
-        */
+        /* ==================================================
+           ① 佐渡の地図を作る
+           ================================================== */
 
         const map = L.map("map").setView(
             [38.05, 138.38],
@@ -286,9 +360,7 @@
         );
 
 
-        /*
-        OpenStreetMapの地図を表示
-        */
+        /* OpenStreetMap */
 
         L.tileLayer(
             "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -299,19 +371,128 @@
         ).addTo(map);
 
 
-        /*
-        ========================================
-        ③ 40マスを地図に表示
-        ========================================
-        */
 
-        spaces.forEach(function(space) {
+        /* ==================================================
+           ② すごろくの40マス
+           ================================================== */
+
+        const spaces = [
+
+            {name:"両津港", lat:38.0776, lng:138.4396},
+
+            {lat:38.0670, lng:138.4350},
+
+            {lat:38.0570, lng:138.4300},
+
+            {lat:38.0480, lng:138.4260},
+
+            {name:"トキの森公園", lat:38.0405, lng:138.4230},
+
+            {lat:38.0950, lng:138.4300},
+
+            {lat:38.1400, lng:138.4350},
+
+            {lat:38.1900, lng:138.4450},
+
+            {lat:38.2500, lng:138.4600},
+
+            {name:"大野亀", lat:38.3260, lng:138.4730},
+
+            {lat:38.2800, lng:138.4300},
+
+            {lat:38.2200, lng:138.3900},
+
+            {lat:38.1600, lng:138.3400},
+
+            {lat:38.1000, lng:138.2900},
+
+            {name:"佐渡金山", lat:38.0398, lng:138.2508},
+
+            {lat:38.0300, lng:138.2650},
+
+            {lat:38.0200, lng:138.2800},
+
+            {lat:38.0100, lng:138.2950},
+
+            {lat:38.0020, lng:138.3100},
+
+            {name:"大膳神社", lat:37.9950, lng:138.3250},
+
+            {lat:37.9920, lng:138.3370},
+
+            {lat:37.9890, lng:138.3500},
+
+            {lat:37.9870, lng:138.3620},
+
+            {lat:37.9850, lng:138.3730},
+
+            {name:"妙宣寺", lat:37.9828, lng:138.3840},
+
+            {lat:37.9500, lng:138.3700},
+
+            {lat:37.9100, lng:138.3500},
+
+            {lat:37.8700, lng:138.3300},
+
+            {lat:37.8350, lng:138.3050},
+
+            {name:"小木港", lat:37.8068, lng:138.2815},
+
+            {lat:37.8350, lng:138.3300},
+
+            {lat:37.8700, lng:138.3700},
+
+            {lat:37.9000, lng:138.4100},
+
+            {lat:37.9350, lng:138.4600},
+
+            {name:"岩首昇竜棚田", lat:37.9620, lng:138.5040},
+
+            {lat:37.9850, lng:138.5200},
+
+            {lat:38.0200, lng:138.5100},
+
+            {lat:38.0500, lng:138.4900},
+
+            {lat:38.0700, lng:138.4650},
+
+            {name:"両津港（ゴール）", lat:38.0776, lng:138.4396}
+
+        ];
+
+
+
+        /* ==================================================
+           ③ すごろくのルートを線で表示
+           ================================================== */
+
+        const route = spaces.map(
+            space => [space.lat, space.lng]
+        );
+
+
+        L.polyline(
+            route,
+            {
+                color: "red",
+                weight: 5,
+                opacity: 0.7
+            }
+        ).addTo(map);
+
+
+
+        /* ==================================================
+           ④ マスを地図に表示
+           ================================================== */
+
+        spaces.forEach((space, index) => {
 
             let icon;
 
-            /*
-            観光地の場合
-            */
+
+            /* ランドマーク */
+
             if (space.name) {
 
                 icon = L.divIcon({
@@ -320,18 +501,20 @@
 
                     html:
                         `<div class="landmark">
-                            ${space.id} ${space.name}
-                        </div>`,
+                            ${index + 1}
+                         </div>`,
 
-                    iconAnchor: [10, 15]
+                    iconSize: [34,34],
+
+                    iconAnchor: [17,17]
 
                 });
 
             }
 
-            /*
-            普通のマスの場合
-            */
+
+            /* 普通のマス */
+
             else {
 
                 icon = L.divIcon({
@@ -340,115 +523,95 @@
 
                     html:
                         `<div class="space-number">
-                            ${space.id}
-                        </div>`,
+                            ${index + 1}
+                         </div>`,
 
-                    iconSize: [32, 32],
+                    iconSize: [24,24],
 
-                    iconAnchor: [16, 16]
+                    iconAnchor: [12,12]
 
                 });
 
             }
 
 
-            /*
-            マスを地図に追加
-            */
-
-            L.marker(
+            const marker = L.marker(
                 [space.lat, space.lng],
-                {
-                    icon: icon
-                }
-            )
-            .addTo(map);
+                {icon: icon}
+            ).addTo(map);
 
 
-        });
+            /* ランドマークなら名前を表示 */
 
+            if (space.name) {
 
-        /*
-        ========================================
-        ④ マスを赤い線でつなぐ
-        ========================================
-        */
+                marker.bindTooltip(
+                    space.name,
+                    {
+                        permanent: true,
+                        direction: "top",
+                        offset: [0,-15]
+                    }
+                );
 
-        const route = spaces.map(function(space) {
-
-            return [
-                space.lat,
-                space.lng
-            ];
-
-        });
-
-
-        L.polyline(
-            route,
-            {
-                color: "red",
-                weight: 4
             }
-        ).addTo(map);
+
+        });
 
 
-        /*
-        ========================================
-        ⑤ プレイヤーを作る
-        ========================================
-        */
+
+        /* ==================================================
+           ⑤ プレイヤー
+           ================================================== */
 
         const players = [
 
             {
                 name: "プレイヤー1",
-                position: 1,
 
-                icon: L.divIcon({
+                position: 0,
 
-                    className: "",
+                color: "red",
 
-                    html:
-                        `<div class="player-token player1">
-                            1
-                        </div>`,
+                marker: null
 
-                    iconSize: [36, 36],
-
-                    iconAnchor: [18, 18]
-
-                })
             },
 
             {
                 name: "プレイヤー2",
-                position: 1,
 
-                icon: L.divIcon({
+                position: 0,
 
-                    className: "",
+                color: "blue",
 
-                    html:
-                        `<div class="player-token player2">
-                            2
-                        </div>`,
+                marker: null
 
-                    iconSize: [36, 36],
-
-                    iconAnchor: [18, 18]
-
-                })
             }
 
         ];
 
 
-        /*
-        プレイヤーを地図に配置
-        */
 
-        players.forEach(function(player) {
+        /* ==================================================
+           ⑥ プレイヤーのコマを作る
+           ================================================== */
+
+        players.forEach((player, index) => {
+
+            const icon = L.divIcon({
+
+                className: "",
+
+                html:
+                    `<div class="player-token player${index + 1}-token">
+                    </div>`,
+
+                iconSize: [34,34],
+
+                iconAnchor: [17,17]
+
+            });
+
 
             player.marker = L.marker(
 
@@ -458,8 +621,8 @@
                 ],
 
                 {
-                    icon: player.icon,
-                    zIndexOffset: 1000
+                    icon: icon,
+                    zIndexOffset: 1000 + index
                 }
 
             ).addTo(map);
@@ -467,131 +630,155 @@
         });
 
 
-        /*
-        ========================================
-        ⑥ ゲームの状態
-        ========================================
-        */
+
+        /* ==================================================
+           ⑦ 現在のターン
+           ================================================== */
 
         let currentPlayer = 0;
 
-        let moving = false;
 
 
-        /*
-        サイコロの絵
-        */
+        /* ==================================================
+           ⑧ サイコロの絵
+           ================================================== */
 
         const diceFaces = [
 
             "⚀",
+
             "⚁",
+
             "⚂",
+
             "⚃",
+
             "⚄",
+
             "⚅"
 
         ];
 
 
-        /*
-        ========================================
-        ⑦ 画面を更新
-        ========================================
-        */
 
-        function updateScreen() {
+        /* ==================================================
+           ⑨ HTML要素を取得
+           ================================================== */
 
-            /*
-            プレイヤー1
-            */
+        const dice = document.getElementById("dice");
 
-            document.getElementById(
-                "player1"
-            ).innerHTML =
+        const diceButton =
+            document.getElementById("diceButton");
 
-                "🔴 プレイヤー1<br>" +
-                "現在：" +
-                players[0].position +
-                "番マス";
+        const turnDisplay =
+            document.getElementById("turnDisplay");
 
 
-            /*
-            プレイヤー2
-            */
 
-            document.getElementById(
-                "player2"
-            ).innerHTML =
-
-                "🔵 プレイヤー2<br>" +
-                "現在：" +
-                players[1].position +
-                "番マス";
-
-
-            /*
-            現在のターン
-            */
-
-            document.getElementById(
-                "turn"
-            ).textContent =
-
-                players[currentPlayer].name;
-
-
-            /*
-            黄色い枠
-            */
-
-            document
-                .getElementById("player1")
-                .classList.toggle(
-                    "active",
-                    currentPlayer === 0
-                );
-
-
-            document
-                .getElementById("player2")
-                .classList.toggle(
-                    "active",
-                    currentPlayer === 1
-                );
-
-        }
-
-
-        /*
-        ========================================
-        ⑧ 少し待つための関数
-        ========================================
-        */
+        /* ==================================================
+           ⑩ 待つための関数
+           ================================================== */
 
         function wait(ms) {
 
             return new Promise(
-
-                function(resolve) {
-
-                    setTimeout(
-                        resolve,
-                        ms
-                    );
-
-                }
-
+                resolve => setTimeout(resolve, ms)
             );
 
         }
 
 
-        /*
-        ========================================
-        ⑨ プレイヤーを1マスずつ動かす
-        ========================================
-        */
+
+        /* ==================================================
+           ⑪ 画面更新
+           ================================================== */
+
+        function updateScreen() {
+
+            turnDisplay.textContent =
+                players[currentPlayer].name +
+                "のターン";
+
+        }
+
+
+
+        /* ==================================================
+           ⑫ サイコロを振るアニメーション
+           ================================================== */
+
+        async function rollDice() {
+
+            /* ボタンを押せなくする */
+
+            diceButton.disabled = true;
+
+
+            /* サイコロを回転させる */
+
+            dice.classList.add("rolling");
+
+
+            /* 仮の数字を高速で表示 */
+
+            const animationTime = 1000;
+
+            const startTime = Date.now();
+
+
+            while (
+                Date.now() - startTime <
+                animationTime
+            ) {
+
+                const randomFace =
+                    Math.floor(
+                        Math.random() * 6
+                    );
+
+
+                dice.textContent =
+                    diceFaces[randomFace];
+
+
+                await wait(100);
+
+            }
+
+
+            /* 本当の出目 */
+
+            const result =
+                Math.floor(
+                    Math.random() * 6
+                ) + 1;
+
+
+            /* アニメーション停止 */
+
+            dice.classList.remove("rolling");
+
+
+            /* 最終結果を表示 */
+
+            dice.textContent =
+                diceFaces[result - 1];
+
+
+            /* 少し間をあける */
+
+            await wait(500);
+
+
+            return result;
+
+        }
+
+
+
+        /* ==================================================
+           ⑬ プレイヤーを1マスずつ移動
+           ================================================== */
 
         async function movePlayer(
             player,
@@ -604,13 +791,11 @@
                 i++
             ) {
 
-                /*
-                次のマスへ
-                */
+                /* 次のマスへ */
 
                 if (
                     player.position <
-                    spaces.length
+                    spaces.length - 1
                 ) {
 
                     player.position++;
@@ -618,42 +803,18 @@
                 }
 
 
-                /*
-                次のマスの位置
-                */
-
-                const space =
-                    spaces[
-                        player.position - 1
-                    ];
-
-
-                /*
-                駒を移動
-                */
+                /* コマを移動 */
 
                 player.marker.setLatLng([
 
-                    space.lat,
-                    space.lng
+                    spaces[player.position].lat,
+
+                    spaces[player.position].lng
 
                 ]);
 
 
-                /*
-                画面を更新
-                */
-
-                updateScreen();
-
-
-                /*
-                0.3秒待つ
-
-                これによって
-                「1マスずつ動く」
-                ように見える
-                */
+                /* 移動するたびに少し待つ */
 
                 await wait(300);
 
@@ -662,238 +823,127 @@
         }
 
 
-        /*
-        ========================================
-        ⑩ サイコロボタン
-        ========================================
-        */
 
-        document
-            .getElementById("diceButton")
-            .addEventListener(
-                "click",
-                async function() {
+        /* ==================================================
+           ⑭ ランドマーク到着演出
+           ================================================== */
 
+        function landmarkEffect(
+            position
+        ) {
 
-                    /*
-                    すでに移動中なら何もしない
-                    */
-
-                    if (moving) {
-
-                        return;
-
-                    }
+            const space =
+                spaces[position];
 
 
-                    moving = true;
+            if (!space.name) {
+                return;
+            }
 
 
-                    /*
-                    ボタンを一時的に押せなくする
-                    */
+            /* メッセージ */
 
-                    document
-                        .getElementById(
-                            "diceButton"
-                        )
-                        .disabled = true;
+            alert(
+                "📍 " +
+                space.name +
+                " に到着！"
+            );
 
-
-                    /*
-                    1〜6の数字をランダムに作る
-                    */
-
-                    const roll =
-                        Math.floor(
-                            Math.random() * 6
-                        ) + 1;
+        }
 
 
-                    /*
-                    サイコロを表示
-                    */
 
-                    document
-                        .getElementById("dice")
-                        .textContent =
-                        diceFaces[
-                            roll - 1
-                        ];
+        /* ==================================================
+           ⑮ サイコロボタン
+           ================================================== */
 
+        diceButton.addEventListener(
+            "click",
 
-                    /*
-                    現在のプレイヤー
-                    */
+            async function() {
 
-                    const player =
-                        players[
-                            currentPlayer
-                        ];
+                const player =
+                    players[currentPlayer];
 
 
-                    /*
-                    メッセージ
-                    */
+                /* サイコロを振る */
 
-                    document
-                        .getElementById("message")
-                        .textContent =
+                const result =
+                    await rollDice();
 
+
+                /* 結果をコンソールにも表示 */
+
+                console.log(
+                    player.name +
+                    "の出目：" +
+                    result
+                );
+
+
+                /* コマを移動 */
+
+                await movePlayer(
+                    player,
+                    result
+                );
+
+
+                /* ランドマークなら演出 */
+
+                landmarkEffect(
+                    player.position
+                );
+
+
+                /* ゴール */
+
+                if (
+                    player.position ===
+                    spaces.length - 1
+                ) {
+
+                    alert(
+                        "🎉 " +
                         player.name +
-                        "は" +
-                        roll +
-                        "マス進みます！";
-
-
-                    /*
-                    ゴールを超えないようにする
-                    */
-
-                    const steps =
-                        Math.min(
-
-                            roll,
-
-                            spaces.length -
-                            player.position
-
-                        );
-
-
-                    /*
-                    実際に移動
-                    */
-
-                    await movePlayer(
-                        player,
-                        steps
+                        " が佐渡を1周しました！"
                     );
 
 
-                    /*
-                    到着したマス
-                    */
+                    diceButton.disabled = true;
 
-                    const landedSpace =
-                        spaces[
-                            player.position - 1
-                        ];
-
-
-                    /*
-                    ゴールした場合
-                    */
-
-                    if (
-                        player.position ===
-                        spaces.length
-                    ) {
-
-                        document
-                            .getElementById(
-                                "message"
-                            )
-                            .innerHTML =
-
-                            "🎉 " +
-                            player.name +
-                            "がゴール！<br>" +
-                            "佐渡を1周しました！";
-
-                    }
-
-
-                    /*
-                    観光地に到着した場合
-                    */
-
-                    else if (
-                        landedSpace.name
-                    ) {
-
-                        document
-                            .getElementById(
-                                "message"
-                            )
-                            .innerHTML =
-
-                            "📍 " +
-                            "<strong>" +
-                            landedSpace.name +
-                            "</strong>" +
-                            "に到着！";
-
-                    }
-
-
-                    /*
-                    普通のマス
-                    */
-
-                    else {
-
-                        document
-                            .getElementById(
-                                "message"
-                            )
-                            .textContent =
-
-                            player.name +
-                            "は" +
-                            player.position +
-                            "番マスに到着しました。";
-
-                    }
-
-
-                    /*
-                    ゴールしていなければ
-                    次のプレイヤーへ
-                    */
-
-                    if (
-                        player.position <
-                        spaces.length
-                    ) {
-
-                        currentPlayer =
-                            (currentPlayer + 1)
-                            % players.length;
-
-                    }
-
-
-                    /*
-                    画面更新
-                    */
-
-                    updateScreen();
-
-
-                    /*
-                    ボタンを再び押せるようにする
-                    */
-
-                    moving = false;
-
-                    document
-                        .getElementById(
-                            "diceButton"
-                        )
-                        .disabled = false;
+                    return;
 
                 }
-            );
 
 
-        /*
-        最初の画面を表示
-        */
+                /* 次のプレイヤーへ */
+
+                currentPlayer =
+                    (currentPlayer + 1)
+                    % players.length;
+
+
+                updateScreen();
+
+
+                /* ボタンを再び押せるようにする */
+
+                diceButton.disabled = false;
+
+            }
+
+        );
+
+
+        /* ==================================================
+           ⑯ 最初の画面
+           ================================================== */
 
         updateScreen();
 
     </script>
 
 </body>
+
 </html>
