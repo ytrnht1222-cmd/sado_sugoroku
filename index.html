@@ -1,556 +1,1401 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>佐渡すごろく</title>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<!-- Leaflet -->
+<link
+rel="stylesheet"
+href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
 
 <style>
-    * { box-sizing: border-box; }
 
-    body {
-        margin: 0;
-        font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
-        background: #eef8ff;
+/* =========================
+   全体
+========================= */
+
+body {
+    margin: 0;
+    font-family: sans-serif;
+    background: #f5f5f5;
+}
+
+
+/* =========================
+   マップ
+========================= */
+
+#map {
+    height: 100vh;
+    width: 100%;
+}
+
+
+/* =========================
+   ゲーム画面
+========================= */
+
+#gamePanel {
+
+    position: absolute;
+
+    top: 15px;
+    right: 15px;
+
+    z-index: 1000;
+
+    background: white;
+
+    padding: 15px;
+
+    border-radius: 15px;
+
+    box-shadow:
+        0 4px 15px rgba(0,0,0,0.25);
+
+    width: 230px;
+}
+
+
+/* =========================
+   タイトル
+========================= */
+
+#gameTitle {
+
+    text-align: center;
+
+    font-size: 24px;
+
+    font-weight: bold;
+
+    margin-bottom: 10px;
+}
+
+
+/* =========================
+   プレイヤー情報
+========================= */
+
+.playerRow {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    margin: 6px 0;
+
+    padding: 6px;
+
+    border-radius: 8px;
+
+    background: #f2f2f2;
+}
+
+
+.playerColor {
+
+    width: 18px;
+    height: 18px;
+
+    border-radius: 50%;
+}
+
+
+.player1Color {
+    background: #e74c3c;
+}
+
+.player2Color {
+    background: #3498db;
+}
+
+.player3Color {
+    background: #2ecc71;
+}
+
+.player4Color {
+    background: #f1c40f;
+}
+
+
+/* =========================
+   ターン表示
+========================= */
+
+#turnDisplay {
+
+    text-align: center;
+
+    font-size: 20px;
+
+    font-weight: bold;
+
+    margin: 10px 0;
+}
+
+
+/* =========================
+   サイコロ
+========================= */
+
+#diceArea {
+
+    text-align: center;
+
+    margin: 10px 0;
+}
+
+
+#diceImage {
+
+    width: 100px;
+    height: 100px;
+
+    object-fit: contain;
+
+    display: block;
+
+    margin: auto;
+}
+
+
+/* サイコロを振っているとき */
+
+.diceRolling {
+
+    animation: diceRoll 0.15s infinite;
+
+}
+
+
+@keyframes diceRoll {
+
+    0% {
+        transform:
+            rotate(-12deg)
+            scale(1);
     }
 
-    #map {
-        height: 100vh;
-        width: 100%;
+    50% {
+        transform:
+            rotate(12deg)
+            scale(1.15);
     }
 
-    #gamePanel {
-        position: absolute;
-        top: 12px;
-        left: 12px;
-        z-index: 1000;
-        width: 280px;
-        padding: 16px;
-        background: rgba(255,255,255,0.96);
-        border-radius: 18px;
-        box-shadow: 0 5px 20px rgba(0,0,0,0.22);
+    100% {
+        transform:
+            rotate(-12deg)
+            scale(1);
     }
 
-    #title {
-        font-size: 25px;
-        font-weight: 900;
-        color: #124d82;
-        text-align: center;
-        margin-bottom: 10px;
+}
+
+
+/* 出目決定時 */
+
+.diceResult {
+
+    animation: diceResult 0.4s ease-out;
+
+}
+
+
+@keyframes diceResult {
+
+    0% {
+        transform: scale(0.7);
     }
 
-    #turnDisplay {
-        padding: 10px;
-        text-align: center;
-        font-size: 20px;
-        font-weight: 900;
-        background: #fff0b8;
-        border-radius: 12px;
-        margin-bottom: 10px;
+    60% {
+        transform: scale(1.2);
     }
 
-    /* サイコロ表示エリア */
-    #diceArea {
-        height: 155px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-        border-radius: 14px;
-        background: linear-gradient(180deg, #edf9ff, #ffffff);
-        margin-bottom: 10px;
+    100% {
+        transform: scale(1);
     }
 
-    #diceImage {
-        width: 145px;
-        height: 145px;
-        object-fit: cover;
-        border-radius: 22px;
-        user-select: none;
-        pointer-events: none;
-        filter: drop-shadow(0 7px 6px rgba(0,0,0,0.18));
-    }
+}
 
-    /* 振っている間の動き */
-    .diceRolling {
-        animation: diceRolling 0.18s infinite;
-    }
 
-    @keyframes diceRolling {
-        0% {
-            transform: rotate(-12deg) scale(0.94);
-        }
-        25% {
-            transform: rotate(12deg) scale(1.05);
-        }
-        50% {
-            transform: rotate(-8deg) scale(1.10);
-        }
-        75% {
-            transform: rotate(10deg) scale(1.02);
-        }
-        100% {
-            transform: rotate(-12deg) scale(0.94);
-        }
-    }
+/* =========================
+   サイコロボタン
+========================= */
 
-    /* 出目が決まった瞬間 */
-    .diceResult {
-        animation: diceResult 0.45s ease-out;
-    }
+#diceButton {
 
-    @keyframes diceResult {
-        0% { transform: scale(0.85) rotate(-8deg); }
-        60% { transform: scale(1.12) rotate(4deg); }
-        100% { transform: scale(1) rotate(0deg); }
-    }
+    width: 100%;
 
-    #diceButton {
-        width: 100%;
-        padding: 13px;
-        border: none;
-        border-radius: 12px;
-        background: #ffc83d;
-        color: #222;
-        font-size: 19px;
-        font-weight: 900;
-        cursor: pointer;
-        box-shadow: 0 3px 0 #d79d00;
-        transition: 0.15s;
-    }
+    padding: 12px;
 
-    #diceButton:hover {
-        transform: translateY(-2px);
-        background: #ffd45d;
-    }
+    font-size: 18px;
 
-    #diceButton:active {
-        transform: translateY(2px);
-        box-shadow: none;
-    }
+    font-weight: bold;
 
-    #diceButton:disabled {
-        background: #ccc;
-        box-shadow: none;
-        cursor: not-allowed;
-        transform: none;
-    }
+    border: none;
 
-    .playerRow {
-        margin-top: 10px;
-        padding: 9px 12px;
-        border-radius: 11px;
-        font-weight: bold;
-    }
+    border-radius: 10px;
 
-    .player1 { background: #ffe1e1; }
-    .player2 { background: #e1eaff; }
+    background: #ffb300;
 
-    .space-number {
-        background: white;
-        border: 2px solid #333;
-        border-radius: 50%;
-        width: 25px;
-        height: 25px;
-        text-align: center;
-        line-height: 21px;
-        font-size: 11px;
-        font-weight: bold;
-    }
+    color: white;
 
-    .landmark {
-        background: #ffd34e;
-        border: 3px solid #e59b00;
-        border-radius: 50%;
-        width: 36px;
-        height: 36px;
-        text-align: center;
-        line-height: 30px;
-        font-size: 12px;
-        font-weight: bold;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.25);
-    }
+    cursor: pointer;
+}
 
-    .player-token {
-        border-radius: 50%;
-        width: 29px;
-        height: 29px;
-        border: 3px solid white;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.45);
-    }
 
-    .player1-token { background: #ef3340; }
-    .player2-token { background: #1769d1; }
+#diceButton:hover {
 
-    @media (max-width: 700px) {
-        #gamePanel {
-            width: 235px;
-            padding: 11px;
-        }
-        #title { font-size: 21px; }
-        #turnDisplay { font-size: 17px; }
-        #diceArea { height: 125px; }
-        #diceImage { width: 115px; height: 115px; }
-        #diceButton { font-size: 17px; }
-    }
+    background: #ff9800;
+
+}
+
+
+#diceButton:disabled {
+
+    background: #aaa;
+
+    cursor: not-allowed;
+
+}
+
+
+/* =========================
+   マス番号
+========================= */
+
+.space-number {
+
+    background: white;
+
+    border: 2px solid #333;
+
+    border-radius: 50%;
+
+    width: 28px;
+    height: 28px;
+
+    line-height: 28px;
+
+    text-align: center;
+
+    font-weight: bold;
+}
+
+
+/* =========================
+   ランドマーク
+========================= */
+
+.landmark {
+
+    background: #fff3cd;
+
+    border: 3px solid #d4a017;
+
+    border-radius: 10px;
+
+    padding: 4px 7px;
+
+    font-weight: bold;
+
+    white-space: nowrap;
+}
+
+
+/* =========================
+   プレイヤーコマ
+========================= */
+
+.player-token {
+
+    width: 26px;
+    height: 26px;
+
+    border-radius: 50%;
+
+    border: 3px solid white;
+
+    box-shadow:
+        0 2px 6px rgba(0,0,0,0.4);
+
+}
+
+
+/* プレイヤー色 */
+
+.player1 {
+    background: #e74c3c;
+}
+
+.player2 {
+    background: #3498db;
+}
+
+.player3 {
+    background: #2ecc71;
+}
+
+.player4 {
+    background: #f1c40f;
+}
+
+
+/* =========================
+   スタート画面
+========================= */
+
+#startScreen {
+
+    position: fixed;
+
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: 100%;
+
+    background:
+        rgba(0,0,0,0.65);
+
+    z-index: 5000;
+
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+}
+
+
+#startBox {
+
+    background: white;
+
+    width: 360px;
+
+    max-width: 90%;
+
+    padding: 30px;
+
+    border-radius: 20px;
+
+    text-align: center;
+
+    box-shadow:
+        0 8px 30px rgba(0,0,0,0.4);
+}
+
+
+#startBox h1 {
+
+    margin-top: 0;
+
+    font-size: 30px;
+}
+
+
+#startBox p {
+
+    font-size: 18px;
+
+    margin-bottom: 20px;
+}
+
+
+/* =========================
+   人数選択
+========================= */
+
+.playerSelect {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, 1fr);
+
+    gap: 12px;
+
+    margin-bottom: 20px;
+}
+
+
+.playerSelect button {
+
+    padding: 15px;
+
+    font-size: 20px;
+
+    font-weight: bold;
+
+    border: 3px solid #ddd;
+
+    background: white;
+
+    border-radius: 12px;
+
+    cursor: pointer;
+}
+
+
+.playerSelect button:hover {
+
+    background: #f5f5f5;
+
+}
+
+
+.playerSelect button.selected {
+
+    border-color: #ff9800;
+
+    background: #fff3cd;
+
+}
+
+
+/* ゲーム開始 */
+
+#startButton {
+
+    width: 100%;
+
+    padding: 15px;
+
+    font-size: 22px;
+
+    font-weight: bold;
+
+    border: none;
+
+    border-radius: 12px;
+
+    background: #ff9800;
+
+    color: white;
+
+    cursor: pointer;
+}
+
+
+#startButton:hover {
+
+    background: #f57c00;
+
+}
+
+
+/* =========================
+   メッセージ
+========================= */
+
+#message {
+
+    text-align: center;
+
+    font-size: 15px;
+
+    margin-top: 8px;
+
+    min-height: 40px;
+}
+
+
+/* =========================
+   ゴール画面
+========================= */
+
+#goalScreen {
+
+    display: none;
+
+    position: fixed;
+
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: 100%;
+
+    background:
+        rgba(0,0,0,0.7);
+
+    z-index: 6000;
+
+    justify-content: center;
+
+    align-items: center;
+}
+
+
+#goalBox {
+
+    background: white;
+
+    padding: 35px;
+
+    border-radius: 20px;
+
+    text-align: center;
+
+}
+
+
+#goalBox h1 {
+
+    font-size: 32px;
+
+}
+
+
+#restartButton {
+
+    padding: 12px 25px;
+
+    font-size: 18px;
+
+    border: none;
+
+    border-radius: 10px;
+
+    background: #ff9800;
+
+    color: white;
+
+    cursor: pointer;
+}
+
+
 </style>
 </head>
 
+
 <body>
 
-<div id="gamePanel">
-    <div id="title">🏝️ 佐渡すごろく</div>
 
-    <div id="turnDisplay">プレイヤー1のターン</div>
+<!-- =========================
+     スタート画面
+========================= -->
 
-    <div id="diceArea">
-        <img id="diceImage" src="images/dice1.png" alt="サイコロ">
+<div id="startScreen">
+
+    <div id="startBox">
+
+        <h1>🏝️ 佐渡すごろく</h1>
+
+        <p>
+            何人で遊びますか？
+        </p>
+
+        <div class="playerSelect">
+
+            <button
+                data-players="2">
+                👤 2人
+            </button>
+
+            <button
+                data-players="3">
+                👤 3人
+            </button>
+
+            <button
+                data-players="4">
+                👤 4人
+            </button>
+
+        </div>
+
+        <button id="startButton">
+            ゲームスタート！
+        </button>
+
     </div>
 
-    <button id="diceButton">🎲 サイコロを振る</button>
-
-    <div class="playerRow player1">🔴 プレイヤー1</div>
-    <div class="playerRow player2">🔵 プレイヤー2</div>
 </div>
+
+
+<!-- =========================
+     マップ
+========================= -->
 
 <div id="map"></div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- =========================
+     ゲームパネル
+========================= -->
+
+<div id="gamePanel">
+
+    <div id="gameTitle">
+        🏝️ 佐渡すごろく
+    </div>
+
+    <div id="turnDisplay">
+        プレイヤー1のターン
+    </div>
+
+    <div id="players">
+
+        <!-- JavaScriptで生成 -->
+
+    </div>
+
+
+    <div id="diceArea">
+
+        <img
+            id="diceImage"
+            src="images/dice1.png"
+            alt="サイコロ">
+
+    </div>
+
+
+    <button id="diceButton">
+        🎲 サイコロを振る
+    </button>
+
+
+    <div id="message">
+        サイコロを振ってスタート！
+    </div>
+
+</div>
+
+
+<!-- =========================
+     ゴール画面
+========================= -->
+
+<div id="goalScreen">
+
+    <div id="goalBox">
+
+        <h1>🎉 ゴール！</h1>
+
+        <p id="goalMessage"></p>
+
+        <button id="restartButton">
+            もう一度遊ぶ
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- Leaflet -->
+
+<script
+src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+</script>
+
 
 <script>
 
-/* =========================================
-   ① 地図
-========================================= */
+/* =================================================
+   佐渡すごろく
+================================================= */
 
-const map = L.map("map").setView([38.05, 138.38], 10);
+
+/* =========================
+   マップ
+========================= */
+
+const map = L.map("map")
+    .setView([38.05, 138.38], 10);
+
 
 L.tileLayer(
     "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
     {
-        attribution: '&copy; OpenStreetMap contributors'
+        attribution:
+            '&copy; OpenStreetMap contributors'
     }
 ).addTo(map);
 
 
-/* =========================================
-   ② 40マス
-========================================= */
+/* =========================
+   40マス
+========================= */
 
 const spaces = [
-    {name:"両津港", lat:38.0776, lng:138.4396},
-    {lat:38.0670, lng:138.4350},
-    {lat:38.0570, lng:138.4300},
-    {lat:38.0480, lng:138.4260},
-    {name:"トキの森公園", lat:38.0405, lng:138.4230},
-    {lat:38.0950, lng:138.4300},
-    {lat:38.1400, lng:138.4350},
-    {lat:38.1900, lng:138.4450},
-    {lat:38.2500, lng:138.4600},
-    {name:"大野亀", lat:38.3260, lng:138.4730},
-    {lat:38.2800, lng:138.4300},
-    {lat:38.2200, lng:138.3900},
-    {lat:38.1600, lng:138.3400},
-    {lat:38.1000, lng:138.2900},
-    {name:"佐渡金山", lat:38.0398, lng:138.2508},
-    {lat:38.0300, lng:138.2650},
-    {lat:38.0200, lng:138.2800},
-    {lat:38.0100, lng:138.2950},
-    {lat:38.0020, lng:138.3100},
-    {name:"大膳神社", lat:37.9950, lng:138.3250},
-    {lat:37.9920, lng:138.3370},
-    {lat:37.9890, lng:138.3500},
-    {lat:37.9870, lng:138.3620},
-    {lat:37.9850, lng:138.3730},
-    {name:"妙宣寺", lat:37.9828, lng:138.3840},
-    {lat:37.9500, lng:138.3700},
-    {lat:37.9100, lng:138.3500},
-    {lat:37.8700, lng:138.3300},
-    {lat:37.8350, lng:138.3050},
-    {name:"小木港", lat:37.8068, lng:138.2815},
-    {lat:37.8350, lng:138.3300},
-    {lat:37.8700, lng:138.3700},
-    {lat:37.9000, lng:138.4100},
-    {lat:37.9350, lng:138.4600},
-    {name:"岩首昇竜棚田", lat:37.9620, lng:138.5040},
-    {lat:37.9850, lng:138.5200},
-    {lat:38.0200, lng:138.5100},
-    {lat:38.0500, lng:138.4900},
-    {lat:38.0700, lng:138.4650},
-    {name:"両津港（ゴール）", lat:38.0776, lng:138.4396}
+
+    [38.0776,138.4396, "両津港"],
+
+    [38.0670,138.4350, ""],
+
+    [38.0570,138.4300, ""],
+
+    [38.0480,138.4260, ""],
+
+    [38.0405,138.4230, "トキの森公園"],
+
+    [38.0950,138.4300, ""],
+
+    [38.1400,138.4350, ""],
+
+    [38.1900,138.4450, ""],
+
+    [38.2500,138.4600, ""],
+
+    [38.3260,138.4730, "大野亀"],
+
+    [38.2800,138.4300, ""],
+
+    [38.2200,138.3900, ""],
+
+    [38.1600,138.3400, ""],
+
+    [38.1000,138.2900, ""],
+
+    [38.0398,138.2508, "佐渡金山"],
+
+    [38.0300,138.2650, ""],
+
+    [38.0200,138.2800, ""],
+
+    [38.0100,138.2950, ""],
+
+    [38.0020,138.3100, ""],
+
+    [37.9950,138.3250, "大膳神社"],
+
+    [37.9920,138.3370, ""],
+
+    [37.9890,138.3500, ""],
+
+    [37.9870,138.3620, ""],
+
+    [37.9850,138.3730, ""],
+
+    [37.9828,138.3840, "妙宣寺"],
+
+    [37.9500,138.3700, ""],
+
+    [37.9100,138.3500, ""],
+
+    [37.8700,138.3300, ""],
+
+    [37.8350,138.3050, ""],
+
+    [37.8068,138.2815, "小木港"],
+
+    [37.8350,138.3300, ""],
+
+    [37.8700,138.3700, ""],
+
+    [37.9000,138.4100, ""],
+
+    [37.9350,138.4600, ""],
+
+    [37.9620,138.5040, "岩首昇竜棚田"],
+
+    [37.9850,138.5200, ""],
+
+    [38.0200,138.5100, ""],
+
+    [38.0500,138.4900, ""],
+
+    [38.0700,138.4650, ""],
+
+    [38.0776,138.4396, "両津港（ゴール）"]
+
 ];
 
 
-/* =========================================
-   ③ ルート
-========================================= */
+/* =========================
+   ルート
+========================= */
 
-const route = spaces.map(space => [space.lat, space.lng]);
-
-L.polyline(route, {
-    color: "red",
-    weight: 5,
-    opacity: 0.75
-}).addTo(map);
+const route = spaces.map(
+    s => [s[0], s[1]]
+);
 
 
-/* =========================================
-   ④ マス表示
-========================================= */
-
-spaces.forEach((space, index) => {
-
-    let icon;
-
-    if (space.name) {
-        icon = L.divIcon({
-            className: "",
-            html: `<div class="landmark">${index + 1}</div>`,
-            iconSize: [36, 36],
-            iconAnchor: [18, 18]
-        });
-    } else {
-        icon = L.divIcon({
-            className: "",
-            html: `<div class="space-number">${index + 1}</div>`,
-            iconSize: [25, 25],
-            iconAnchor: [12, 12]
-        });
-    }
-
-    const marker = L.marker(
-        [space.lat, space.lng],
-        {icon: icon}
-    ).addTo(map);
-
-    if (space.name) {
-        marker.bindTooltip(space.name, {
-            permanent: true,
-            direction: "top",
-            offset: [0, -16]
-        });
-    }
-});
-
-
-/* =========================================
-   ⑤ プレイヤー
-========================================= */
-
-const players = [
+L.polyline(
+    route,
     {
-        name: "プレイヤー1",
-        position: 0,
-        marker: null
-    },
-    {
-        name: "プレイヤー2",
-        position: 0,
-        marker: null
+        color: "red",
+        weight: 4
     }
-];
+).addTo(map);
 
-players.forEach((player, index) => {
 
-    const icon = L.divIcon({
-        className: "",
-        html: `<div class="player-token player${index + 1}-token"></div>`,
-        iconSize: [35, 35],
-        iconAnchor: [17, 17]
-    });
+/* =========================
+   マスを表示
+========================= */
 
-    player.marker = L.marker(
-        [spaces[0].lat, spaces[0].lng],
-        {
-            icon: icon,
-            zIndexOffset: 1000 + index
+spaces.forEach(
+    (space, index) => {
+
+        const lat = space[0];
+        const lng = space[1];
+        const name = space[2];
+
+
+        if (name) {
+
+            L.marker(
+                [lat, lng],
+                {
+                    icon:
+                        L.divIcon({
+
+                            className:
+                                "landmark",
+
+                            html:
+                                name,
+
+                            iconSize:
+                                null
+
+                        })
+                }
+            ).addTo(map);
+
+        } else {
+
+            L.marker(
+                [lat, lng],
+                {
+                    icon:
+                        L.divIcon({
+
+                            className:
+                                "space-number",
+
+                            html:
+                                index + 1,
+
+                            iconSize:
+                                [28, 28]
+
+                        })
+                }
+            ).addTo(map);
+
         }
-    ).addTo(map);
-});
+
+    }
+);
 
 
-/* =========================================
-   ⑥ ゲーム状態
-========================================= */
+/* =================================================
+   プレイヤー人数
+================================================= */
+
+let playerCount = 2;
+
+
+/* =========================
+   プレイヤー選択
+========================= */
+
+const playerButtons =
+    document.querySelectorAll(
+        ".playerSelect button"
+    );
+
+
+playerButtons.forEach(
+    button => {
+
+        button.addEventListener(
+            "click",
+            () => {
+
+                playerButtons.forEach(
+                    b =>
+                        b.classList.remove(
+                            "selected"
+                        )
+                );
+
+                button.classList.add(
+                    "selected"
+                );
+
+                playerCount =
+                    Number(
+                        button.dataset.players
+                    );
+
+            }
+        );
+
+    }
+);
+
+
+/* =========================
+   最初は2人を選択
+========================= */
+
+playerButtons[0]
+    .classList.add("selected");
+
+
+/* =================================================
+   プレイヤーデータ
+================================================= */
+
+let players = [];
 
 let currentPlayer = 0;
 
-const diceImage = document.getElementById("diceImage");
-const diceButton = document.getElementById("diceButton");
-const turnDisplay = document.getElementById("turnDisplay");
+
+/* =========================
+   ゲーム開始
+========================= */
+
+document
+    .getElementById("startButton")
+    .addEventListener(
+        "click",
+        startGame
+    );
 
 
-/* =========================================
-   ⑦ サイコロ画像を先読み
-   最初の一回だけ読み込みが遅くなるのを防ぐ
-========================================= */
+function startGame() {
 
-const diceImages = [];
+    players = [];
 
-for (let i = 1; i <= 6; i++) {
-    const image = new Image();
-    image.src = `images/dice${i}.png`;
-    diceImages.push(image);
+    currentPlayer = 0;
+
+
+    /* プレイヤーを作る */
+
+    for (
+        let i = 0;
+        i < playerCount;
+        i++
+    ) {
+
+        players.push({
+
+            position: 0,
+
+            marker: null,
+
+            name:
+                "プレイヤー" +
+                (i + 1)
+
+        });
+
+    }
+
+
+    /* プレイヤー表示 */
+
+    createPlayersUI();
+
+
+    /* コマを作る */
+
+    createPlayerMarkers();
+
+
+    /* スタート画面を消す */
+
+    document
+        .getElementById("startScreen")
+        .style.display = "none";
+
+
+    updateScreen();
+
 }
 
 
-/* =========================================
-   ⑧ 待つ関数
-========================================= */
+/* =================================================
+   プレイヤーUI
+================================================= */
 
-function wait(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+function createPlayersUI() {
+
+    const container =
+        document.getElementById(
+            "players"
+        );
+
+
+    container.innerHTML = "";
+
+
+    players.forEach(
+        (player, index) => {
+
+            const row =
+                document.createElement(
+                    "div"
+                );
+
+
+            row.className =
+                "playerRow";
+
+
+            row.innerHTML = `
+
+                <div
+                    class="
+                    playerColor
+                    player${index + 1}Color
+                    ">
+                </div>
+
+                <div>
+                    プレイヤー${index + 1}
+                </div>
+
+            `;
+
+
+            container.appendChild(row);
+
+        }
+    );
+
 }
 
 
-/* =========================================
-   ⑨ ターン表示
-========================================= */
+/* =================================================
+   プレイヤーコマ
+================================================= */
+
+function createPlayerMarkers() {
+
+    players.forEach(
+        (player, index) => {
+
+            const icon =
+                L.divIcon({
+
+                    className: "",
+
+                    html:
+                        `<div class="
+                        player-token
+                        player${index + 1}
+                        "></div>`,
+
+                    iconSize:
+                        [32, 32],
+
+                    iconAnchor:
+                        [16, 16]
+
+                });
+
+
+            player.marker =
+                L.marker(
+                    spaces[0],
+                    {
+                        icon: icon,
+                        zIndexOffset:
+                            1000 + index
+                    }
+                ).addTo(map);
+
+        }
+    );
+
+}
+
+
+/* =================================================
+   画面更新
+================================================= */
 
 function updateScreen() {
-    turnDisplay.textContent =
-        players[currentPlayer].name + "のターン";
+
+    document
+        .getElementById(
+            "turnDisplay"
+        )
+        .textContent =
+            players[currentPlayer].name
+            + "のターン";
+
 }
 
 
-/* =========================================
-   ⑩ サイコロを振る
-========================================= */
+/* =================================================
+   サイコロ
+================================================= */
+
+const diceImage =
+    document.getElementById(
+        "diceImage"
+    );
+
+
+const diceButton =
+    document.getElementById(
+        "diceButton"
+    );
+
+
+diceButton.addEventListener(
+    "click",
+    rollDice
+);
+
 
 async function rollDice() {
 
     diceButton.disabled = true;
 
-    diceImage.classList.remove("diceResult");
-    diceImage.classList.add("diceRolling");
+
+    /* サイコロを振るアニメーション */
+
+    diceImage.classList.add(
+        "diceRolling"
+    );
+
 
     /*
-       6種類の画像を高速で切り替える
+       約1秒間、
+       サイコロ画像を高速切り替え
     */
 
-    let imageNumber = 1;
-    const startTime = Date.now();
+    for (
+        let i = 0;
+        i < 10;
+        i++
+    ) {
 
-    while (Date.now() - startTime < 1100) {
+        const random =
+            Math.floor(
+                Math.random() * 6
+            ) + 1;
 
-        diceImage.src = `images/dice${imageNumber}.png`;
 
-        imageNumber++;
+        diceImage.src =
+            "images/dice"
+            + random
+            + ".png";
 
-        if (imageNumber > 6) {
-            imageNumber = 1;
-        }
 
-        await wait(90);
+        await wait(100);
+
     }
 
-    /* 本当の出目を決定 */
 
-    const result = Math.floor(Math.random() * 6) + 1;
+    /* 本当の出目 */
 
-    /* 最終結果を表示 */
-
-    diceImage.src = `images/dice${result}.png`;
-
-    diceImage.classList.remove("diceRolling");
-
-    /* 「ドン！」と止まる */
-
-    void diceImage.offsetWidth;
-    diceImage.classList.add("diceResult");
-
-    await wait(600);
-
-    return result;
-}
+    const result =
+        Math.floor(
+            Math.random() * 6
+        ) + 1;
 
 
-/* =========================================
-   ⑪ コマを1マスずつ移動
-========================================= */
+    diceImage.classList.remove(
+        "diceRolling"
+    );
 
-async function movePlayer(player, steps) {
 
-    for (let i = 0; i < steps; i++) {
+    diceImage.classList.add(
+        "diceResult"
+    );
 
-        if (player.position < spaces.length - 1) {
-            player.position++;
+
+    diceImage.src =
+        "images/dice"
+        + result
+        + ".png";
+
+
+    await wait(500);
+
+
+    diceImage.classList.remove(
+        "diceResult"
+    );
+
+
+    /* コマを移動 */
+
+    await movePlayer(
+        currentPlayer,
+        result
+    );
+
+
+    /* ゴールしていなければ次へ */
+
+    if (
+        players[currentPlayer]
+            .position <
+        spaces.length - 1
+    ) {
+
+        currentPlayer++;
+
+        if (
+            currentPlayer >=
+            players.length
+        ) {
+
+            currentPlayer = 0;
+
         }
 
-        const target = spaces[player.position];
+        updateScreen();
 
-        player.marker.setLatLng([
-            target.lat,
-            target.lng
-        ]);
+        diceButton.disabled = false;
 
-        await wait(300);
     }
+
 }
 
 
-/* =========================================
-   ⑫ ランドマーク到着
-========================================= */
+/* =================================================
+   プレイヤー移動
+================================================= */
 
-function landmarkEffect(position) {
+async function movePlayer(
+    playerIndex,
+    steps
+) {
 
-    const space = spaces[position];
-
-    if (!space.name) return;
-
-    alert("📍 " + space.name + " に到着！");
-}
+    const player =
+        players[playerIndex];
 
 
-/* =========================================
-   ⑬ サイコロボタン
-========================================= */
+    for (
+        let i = 0;
+        i < steps;
+        i++
+    ) {
 
-diceButton.addEventListener("click", async () => {
+        if (
+            player.position >=
+            spaces.length - 1
+        ) {
 
-    const player = players[currentPlayer];
+            break;
 
-    const result = await rollDice();
+        }
 
-    console.log(player.name + "の出目：" + result);
 
-    await movePlayer(player, result);
+        player.position++;
 
-    landmarkEffect(player.position);
 
-    /* ゴール */
+        const lat =
+            spaces[
+                player.position
+            ][0];
 
-    if (player.position === spaces.length - 1) {
 
-        alert(
-            "🎉 " +
-            player.name +
-            " が佐渡を1周しました！"
+        const lng =
+            spaces[
+                player.position
+            ][1];
+
+
+        player.marker.setLatLng(
+            [lat, lng]
         );
 
-        diceButton.disabled = true;
-        return;
+
+        await wait(300);
+
     }
 
-    /* 次のプレイヤー */
 
-    currentPlayer =
-        (currentPlayer + 1) % players.length;
+    /* ゴール判定 */
 
-    updateScreen();
+    if (
+        player.position >=
+        spaces.length - 1
+    ) {
 
-    diceButton.disabled = false;
-});
+        showGoal(
+            playerIndex
+        );
+
+    }
+
+}
 
 
-/* =========================================
-   ⑭ 初期表示
-========================================= */
+/* =================================================
+   待機
+================================================= */
 
-updateScreen();
+function wait(ms) {
+
+    return new Promise(
+        resolve =>
+            setTimeout(
+                resolve,
+                ms
+            )
+    );
+
+}
+
+
+/* =================================================
+   ゴール
+================================================= */
+
+function showGoal(
+    playerIndex
+) {
+
+    document
+        .getElementById(
+            "goalScreen"
+        )
+        .style.display =
+            "flex";
+
+
+    document
+        .getElementById(
+            "goalMessage"
+        )
+        .textContent =
+            players[playerIndex].name
+            + "が佐渡を一周しました！";
+
+
+    diceButton.disabled = true;
+
+}
+
+
+/* =================================================
+   もう一度遊ぶ
+================================================= */
+
+document
+    .getElementById(
+        "restartButton"
+    )
+    .addEventListener(
+        "click",
+        () => {
+
+            location.reload();
+
+        }
+    );
 
 </script>
 
