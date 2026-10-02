@@ -7,7 +7,6 @@
 
 <title>佐渡すごろく</title>
 
-<!-- Leaflet -->
 <link
 rel="stylesheet"
 href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -37,7 +36,7 @@ body {
 
 
 /* =========================
-   ゲーム画面
+   ゲームパネル
 ========================= */
 
 #gamePanel {
@@ -199,7 +198,7 @@ body {
 }
 
 
-/* 出目決定時 */
+/* 出目決定 */
 
 .diceResult {
 
@@ -310,41 +309,92 @@ body {
 }
 
 
-/* =========================
-   プレイヤーコマ
-========================= */
+/* =================================================
+   プレイヤーの駒
+   ボードゲームのコマ風
+================================================= */
 
 .player-token {
 
-    width: 26px;
-    height: 26px;
+    position: relative;
+
+    width: 34px;
+    height: 42px;
+
+    filter:
+        drop-shadow(
+            0 3px 3px rgba(0,0,0,0.45)
+        );
+
+}
+
+
+/* 駒の頭 */
+
+.player-token::before {
+
+    content: "";
+
+    position: absolute;
+
+    top: 0;
+    left: 8px;
+
+    width: 18px;
+    height: 18px;
 
     border-radius: 50%;
 
-    border: 3px solid white;
+    background: var(--piece-color);
 
-    box-shadow:
-        0 2px 6px rgba(0,0,0,0.4);
+    border: 2px solid white;
+
+    box-sizing: border-box;
+}
+
+
+/* 駒の胴体 */
+
+.player-token::after {
+
+    content: "";
+
+    position: absolute;
+
+    left: 4px;
+    top: 15px;
+
+    width: 26px;
+    height: 21px;
+
+    background: var(--piece-color);
+
+    border: 2px solid white;
+
+    box-sizing: border-box;
+
+    border-radius:
+        45% 45% 25% 25%;
 
 }
 
 
-/* プレイヤー色 */
+/* 駒の台座 */
 
 .player1 {
-    background: #e74c3c;
+    --piece-color: #e74c3c;
 }
 
 .player2 {
-    background: #3498db;
+    --piece-color: #3498db;
 }
 
 .player3 {
-    background: #2ecc71;
+    --piece-color: #2ecc71;
 }
 
 .player4 {
-    background: #f1c40f;
+    --piece-color: #f1c40f;
 }
 
 
@@ -544,7 +594,6 @@ body {
     border-radius: 20px;
 
     text-align: center;
-
 }
 
 
@@ -572,7 +621,6 @@ body {
     cursor: pointer;
 }
 
-
 </style>
 </head>
 
@@ -596,18 +644,15 @@ body {
 
         <div class="playerSelect">
 
-            <button
-                data-players="2">
+            <button data-players="2">
                 👤 2人
             </button>
 
-            <button
-                data-players="3">
+            <button data-players="3">
                 👤 3人
             </button>
 
-            <button
-                data-players="4">
+            <button data-players="4">
                 👤 4人
             </button>
 
@@ -643,12 +688,7 @@ body {
         プレイヤー1のターン
     </div>
 
-    <div id="players">
-
-        <!-- JavaScriptで生成 -->
-
-    </div>
-
+    <div id="players"></div>
 
     <div id="diceArea">
 
@@ -659,11 +699,9 @@ body {
 
     </div>
 
-
     <button id="diceButton">
         🎲 サイコロを振る
     </button>
-
 
     <div id="message">
         サイコロを振ってスタート！
@@ -693,8 +731,6 @@ body {
 </div>
 
 
-<!-- Leaflet -->
-
 <script
 src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
 </script>
@@ -703,16 +739,14 @@ src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
 <script>
 
 /* =================================================
-   佐渡すごろく
+   マップ
 ================================================= */
 
-
-/* =========================
-   マップ
-========================= */
-
 const map = L.map("map")
-    .setView([38.05, 138.38], 10);
+    .setView(
+        [38.05, 138.38],
+        10
+    );
 
 
 L.tileLayer(
@@ -724,9 +758,9 @@ L.tileLayer(
 ).addTo(map);
 
 
-/* =========================
+/* =================================================
    40マス
-========================= */
+================================================= */
 
 const spaces = [
 
@@ -813,9 +847,32 @@ const spaces = [
 ];
 
 
-/* =========================
+/* =================================================
+   ここが「必ず止まるマス」
+================================================= */
+
+/*
+   配列は0から始まるので、
+
+   5マス目  → 4
+   15マス目 → 14
+   35マス目 → 34
+*/
+
+const forcedStopSpaces = [
+
+    4,    // トキの森公園
+
+    14,   // 佐渡金山
+
+    34    // 岩首昇竜棚田
+
+];
+
+
+/* =================================================
    ルート
-========================= */
+================================================= */
 
 const route = spaces.map(
     s => [s[0], s[1]]
@@ -831,15 +888,17 @@ L.polyline(
 ).addTo(map);
 
 
-/* =========================
+/* =================================================
    マスを表示
-========================= */
+================================================= */
 
 spaces.forEach(
     (space, index) => {
 
         const lat = space[0];
+
         const lng = space[1];
+
         const name = space[2];
 
 
@@ -864,7 +923,9 @@ spaces.forEach(
                 }
             ).addTo(map);
 
-        } else {
+        }
+
+        else {
 
             L.marker(
                 [lat, lng],
@@ -898,9 +959,9 @@ spaces.forEach(
 let playerCount = 2;
 
 
-/* =========================
+/* =================================================
    プレイヤー選択
-========================= */
+================================================= */
 
 const playerButtons =
     document.querySelectorAll(
@@ -922,9 +983,11 @@ playerButtons.forEach(
                         )
                 );
 
+
                 button.classList.add(
                     "selected"
                 );
+
 
                 playerCount =
                     Number(
@@ -938,9 +1001,7 @@ playerButtons.forEach(
 );
 
 
-/* =========================
-   最初は2人を選択
-========================= */
+/* 最初は2人 */
 
 playerButtons[0]
     .classList.add("selected");
@@ -955,9 +1016,9 @@ let players = [];
 let currentPlayer = 0;
 
 
-/* =========================
+/* =================================================
    ゲーム開始
-========================= */
+================================================= */
 
 document
     .getElementById("startButton")
@@ -973,8 +1034,6 @@ function startGame() {
 
     currentPlayer = 0;
 
-
-    /* プレイヤーを作る */
 
     for (
         let i = 0;
@@ -997,20 +1056,15 @@ function startGame() {
     }
 
 
-    /* プレイヤー表示 */
-
     createPlayersUI();
-
-
-    /* コマを作る */
 
     createPlayerMarkers();
 
 
-    /* スタート画面を消す */
-
     document
-        .getElementById("startScreen")
+        .getElementById(
+            "startScreen"
+        )
         .style.display = "none";
 
 
@@ -1072,7 +1126,7 @@ function createPlayersUI() {
 
 
 /* =================================================
-   プレイヤーコマ
+   プレイヤーの駒を作る
 ================================================= */
 
 function createPlayerMarkers() {
@@ -1092,10 +1146,10 @@ function createPlayerMarkers() {
                         "></div>`,
 
                     iconSize:
-                        [32, 32],
+                        [34, 42],
 
                     iconAnchor:
-                        [16, 16]
+                        [17, 38]
 
                 });
 
@@ -1105,6 +1159,7 @@ function createPlayerMarkers() {
                     spaces[0],
                     {
                         icon: icon,
+
                         zIndexOffset:
                             1000 + index
                     }
@@ -1160,16 +1215,14 @@ async function rollDice() {
     diceButton.disabled = true;
 
 
-    /* サイコロを振るアニメーション */
-
     diceImage.classList.add(
         "diceRolling"
     );
 
 
     /*
-       約1秒間、
-       サイコロ画像を高速切り替え
+       サイコロを振っている間
+       画像を高速で切り替える
     */
 
     for (
@@ -1195,7 +1248,7 @@ async function rollDice() {
     }
 
 
-    /* 本当の出目 */
+    /* 最終的な出目 */
 
     const result =
         Math.floor(
@@ -1235,30 +1288,41 @@ async function rollDice() {
     );
 
 
-    /* ゴールしていなければ次へ */
+    /*
+       ゴールした場合は
+       次のターンに進まない
+    */
 
     if (
         players[currentPlayer]
-            .position <
+            .position >=
         spaces.length - 1
     ) {
 
-        currentPlayer++;
-
-        if (
-            currentPlayer >=
-            players.length
-        ) {
-
-            currentPlayer = 0;
-
-        }
-
-        updateScreen();
-
-        diceButton.disabled = false;
+        return;
 
     }
+
+
+    /* 次のプレイヤー */
+
+    currentPlayer++;
+
+
+    if (
+        currentPlayer >=
+        players.length
+    ) {
+
+        currentPlayer = 0;
+
+    }
+
+
+    updateScreen();
+
+
+    diceButton.disabled = false;
 
 }
 
@@ -1282,6 +1346,10 @@ async function movePlayer(
         i++
     ) {
 
+        /*
+           ゴールなら終了
+        */
+
         if (
             player.position >=
             spaces.length - 1
@@ -1291,6 +1359,8 @@ async function movePlayer(
 
         }
 
+
+        /* 1マス進む */
 
         player.position++;
 
@@ -1307,17 +1377,73 @@ async function movePlayer(
             ][1];
 
 
+        /* =========================
+           駒を移動
+        ========================= */
+
         player.marker.setLatLng(
             [lat, lng]
         );
 
 
-        await wait(300);
+        /* =========================
+           マップも駒を追いかける
+        ========================= */
+
+        map.panTo(
+            [lat, lng],
+            {
+                animate: true,
+
+                duration: 0.35
+            }
+        );
+
+
+        /* =========================
+           1マス分待つ
+        ========================= */
+
+        await wait(400);
+
+
+        /*
+           特定の3地点なら
+           強制的に停止
+        */
+
+        if (
+            forcedStopSpaces.includes(
+                player.position
+            )
+        ) {
+
+            const landmarkName =
+                spaces[
+                    player.position
+                ][2];
+
+
+            document
+                .getElementById(
+                    "message"
+                )
+                .textContent =
+                    "📍 "
+                    + landmarkName
+                    + "に到着！";
+
+
+            break;
+
+        }
 
     }
 
 
-    /* ゴール判定 */
+    /* =========================
+       ゴール判定
+    ========================= */
 
     if (
         player.position >=
